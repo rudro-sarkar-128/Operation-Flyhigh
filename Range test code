@@ -1,0 +1,82 @@
+Transmitter:
+
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+#define CE_PIN 4
+#define CSN_PIN 5
+#define BUTTON_PIN 15
+#define LED_PIN 2
+
+RF24 radio(CE_PIN, CSN_PIN);
+const byte address[6] = "00001";
+
+void setup() {
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // Button connected to GND
+  pinMode(LED_PIN, OUTPUT);
+
+  radio.begin();
+  radio.openWritingPipe(address);
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_250KBPS);
+  radio.stopListening();
+}
+
+void loop() {
+  bool buttonPressed = digitalRead(BUTTON_PIN) == LOW;
+
+  if (buttonPressed) {
+    const char message[] = "ON";
+    radio.write(&message, sizeof(message));
+    digitalWrite(LED_PIN, HIGH);
+  } else {
+    const char message[] = "OFF";
+    radio.write(&message, sizeof(message));
+    digitalWrite(LED_PIN, LOW);
+  }
+
+  delay(100); // Slight delay for stability
+}
+
+
+
+Receiver:
+
+
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+#define CE_PIN D2
+#define CSN_PIN D1
+#define LED_PIN D4
+
+RF24 radio(CE_PIN, CSN_PIN);
+const byte address[6] = "00001";
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+
+  radio.begin();
+  radio.openReadingPipe(1, address);
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_250KBPS);
+  radio.startListening();
+}
+
+void loop() {
+  if (radio.available()) {
+    char message[32] = {0};
+    radio.read(&message, sizeof(message));
+
+    if (strcmp(message, "ON") == 0) {
+      digitalWrite(LED_PIN, HIGH);
+    } else {
+      digitalWrite(LED_PIN, LOW);
+    }
+  }
+}
+
+
+
